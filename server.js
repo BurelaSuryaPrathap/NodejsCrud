@@ -1,100 +1,65 @@
-const express = require('express');
-const mysql = require('mysql2');
-const bodyParser = require('body-parser');
-
-const connection = mysql.createConnection({
-  host: 'localhost',
-  user: 'root', 
-  password: 'password',
-  database: 'employee_db'
-});
-
-connection.connect((err) => {
-  if (err) {
-    console.error('error connecting to the database:', err.stack);
-    return;
-  }
-  console.log('connected to MySQL database');
-});
+import express from "express";
+import mysql from "mysql2";
+import cors from "cors";
 
 const app = express();
-app.use(bodyParser.json());
+app.use(express.json());
+app.use(cors());
 
-// CREATE: Add a new employee
-app.post('/employees', (req, res) => {
-  const { first_name, last_name, email, department, position } = req.body;
+// MySQL Database Connection
+const db = mysql.createConnection({
+  host: "localhost",
+  user: "root", // Change if you have a different MySQL user
+  password: "password", // Add your MySQL password
+  database: "blogdb",
+});
 
-  const query = 'INSERT INTO employees (first_name, last_name, email, department, position) VALUES (?, ?, ?, ?, ?)';
-  connection.query(query, [first_name, last_name, email, department, position], (err, result) => {
+db.connect((err) => {
+  if (err) {
+    console.error("Database Connection Failed:", err);
+  } else {
+    console.log("✅ Connected to MySQL Database");
+  }
+});
+
+// Route to Get All Blogs
+app.get("/api/blogs", (req, res) => {
+  db.query("SELECT * FROM blogs", (err, result) => {
     if (err) {
-      res.status(500).json({ message: 'Failed to add employee', error: err });
-    } else {
-      res.status(201).json({ message: 'Employee added successfully', employeeId: result.insertId });
+      return res.status(500).json({ error: err.message });
     }
+    res.json(result);
   });
 });
 
-// READ: Get all employees
-app.get('/employees', (req, res) => {
-  const query = 'SELECT * FROM employees';
-  connection.query(query, (err, results) => {
-    if (err) {
-      res.status(500).json({ message: 'Failed to retrieve employees', error: err });
-    } else {
-      res.status(200).json(results);
-    }
-  });
-});
-
-// READ: Get a single employee by ID
-app.get('/employees/:id', (req, res) => {
-  const employeeId = req.params.id;
-
-  const query = 'SELECT * FROM employees WHERE id = ?';
-  connection.query(query, [employeeId], (err, results) => {
-    if (err) {
-      res.status(500).json({ message: 'Failed to retrieve employee', error: err });
-    } else {
-      if (results.length > 0) {
-        res.status(200).json(results[0]);
-      } else {
-        res.status(404).json({ message: 'Employee not found' });
+// Route to Add a Blog
+app.post("/api/blogs", (req, res) => {
+  const { title, image, content } = req.body;
+  db.query(
+    "INSERT INTO blogs (title, image, content) VALUES (?, ?, ?)",
+    [title, image, content],
+    (err, result) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
       }
+      res.json({ id: result.insertId, title, image, content });
     }
-  });
+  );
 });
 
-// UPDATE: Update an employee's details
-app.put('/employees/:id', (req, res) => {
-  const employeeId = req.params.id;
-  const { first_name, last_name, email, department, position } = req.body;
-
-  const query = 'UPDATE employees SET first_name = ?, last_name = ?, email = ?, department = ?, position = ? WHERE id = ?';
-  connection.query(query, [first_name, last_name, email, department, position, employeeId], (err, result) => {
+// Route to Delete a Blog
+app.delete("/api/blogs/:id", (req, res) => {
+  const { id } = req.params;
+  db.query("DELETE FROM blogs WHERE id = ?", [id], (err) => {
     if (err) {
-      res.status(500).json({ message: 'Failed to update employee', error: err });
-    } else {
-      res.status(200).json({ message: 'Employee updated successfully' });
+      return res.status(500).json({ error: err.message });
     }
+    res.json({ message: "Blog deleted successfully" });
   });
 });
 
-// DELETE: Delete an employee by ID
-app.delete('/employees/:id', (req, res) => {
-  const employeeId = req.params.id;
-
-  const query = 'DELETE FROM employees WHERE id = ?';
-  connection.query(query, [employeeId], (err, result) => {
-    if (err) {
-      res.status(500).json({ message: 'Failed to delete employee', error: err });
-    } else {
-      res.status(200).json({ message: 'Employee deleted successfully' });
-    }
-  });
-});
-
-//server
-const port = 3000;
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+// Start Server
+const PORT = 5000;
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
