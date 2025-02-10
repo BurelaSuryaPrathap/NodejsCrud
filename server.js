@@ -6,11 +6,11 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// MySQL Database Connection
+
 const db = mysql.createConnection({
   host: "localhost",
-  user: "root", // Change if you have a different MySQL user
-  password: "password", // Add your MySQL password
+  user: "root", 
+  password: "password",
   database: "blogdb",
 });
 
@@ -22,7 +22,7 @@ db.connect((err) => {
   }
 });
 
-// Route to Get All Blogs
+
 app.get("/api/blogs", (req, res) => {
   db.query("SELECT * FROM blogs", (err, result) => {
     if (err) {
@@ -32,7 +32,6 @@ app.get("/api/blogs", (req, res) => {
   });
 });
 
-// Route to Add a Blog
 app.post("/api/blogs", (req, res) => {
   const { title, image, content } = req.body;
   db.query(
@@ -47,7 +46,6 @@ app.post("/api/blogs", (req, res) => {
   );
 });
 
-// Route to Delete a Blog
 app.delete("/api/blogs/:id", (req, res) => {
   const { id } = req.params;
   db.query("DELETE FROM blogs WHERE id = ?", [id], (err) => {
@@ -58,7 +56,7 @@ app.delete("/api/blogs/:id", (req, res) => {
   });
 });
 
-// Start Server
+
 const PORT = 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
